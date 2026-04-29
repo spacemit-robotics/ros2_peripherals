@@ -1,0 +1,7 @@
+string command
+uint32 timeout_ms     # 0 uses the node default timeout
+---
+bool success
+int32 status_code
+string message
+string response

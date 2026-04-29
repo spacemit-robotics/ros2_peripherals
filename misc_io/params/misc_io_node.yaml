@@ -1,0 +1,18 @@
+misc_io_node:
+  ros__parameters:
+    command_topic: "misc_io/command"
+    state_topic: "misc_io/state"
+    event_topic: "misc_io/events"
+    frame_id: "misc_io"
+    publish_period_ms: 100
+
+    # Example: two status inputs + one controllable output.
+    io_ids: [0]
+    types: [3]
+    dirs: [0]
+    active_logics: [1]
+    debounce_mss: [20]
+    chip_names: ["gpiochip2"]
+    line_offsets: [19]
+    consumers: ["status_input_0"]
+    io_names: ["status_input_0"]

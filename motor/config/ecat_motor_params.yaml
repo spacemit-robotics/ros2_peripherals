@@ -1,0 +1,33 @@
+# Motor Node Configuration
+motor_node:
+  ros__parameters:
+    # Hardware Configuration
+    # Supported types: can, uart, ecat
+    motor_type: "ecat"
+    # Registered driver names: dm_can, feetech, drv_ethercat_jmc
+    driver_name: "drv_ethercat_jmc"
+    motor_iface: "eth0"
+    motor_ids: [1, 2]
+    
+    # UART Specific
+    baud: 1000000
+    
+    # EtherCAT Specific
+    # Bus cycle time in milliseconds
+    ecat_cycle_ms: 2
+    # Position of motors on the EtherCAT bus (if different from 0, 1, ...)
+    # slave_indices: [0, 1]
+    # Whether to block in constructor waiting for slave enablement and zero-anchoring
+    wait_for_ready: true
+
+    # Control Parameters (Supports dynamic modification)
+    # EtherCAT Profile Parameters (for PP mode, unit: rad/s or rad/s^2)
+    profile_vel: [10000.0, 10000.0]
+    profile_acc: [10000.0, 10000.0]
+    profile_dec: [10000.0, 10000.0]
+    max_velocity: 14400.0
+    max_torque: 4200.0
+    
+    # Others
+    state_publish_hz: 100.0
+    cmd_timeout_ms: 200

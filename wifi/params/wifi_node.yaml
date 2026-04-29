@@ -1,0 +1,17 @@
+wifi_node:
+  ros__parameters:
+    frame_id: "wifi"
+
+    status_topic: "wifi/status"
+    scan_topic: "wifi/scan_results"
+    connect_service: "wifi/connect"
+    disconnect_service: "wifi/disconnect"
+    scan_service: "wifi/scan"
+
+    enable_on_startup: true
+    auto_reconnect: true
+    status_period_ms: 2000
+    scan_period_ms: 0
+    scan_on_startup: false
+    scan_max_results: 32
+    scan_ssid: ""

@@ -1,0 +1,29 @@
+motor_node:
+  ros__parameters:
+    # Hardware Configuration
+    motor_type: "can"
+    driver_name: "drv_can_dm"
+    motor_iface: "can0"
+    motor_ids: [2, 3]
+    baud: 1000000
+
+    # Control Parameters (Supports dynamic modification)
+    # For "can" type (MIT mode), these are Kp and Kd
+    # Values based on test_motor_can.c MIT impedance control phase
+    pid_kp: [25.0]
+    pid_ki: [0.0]
+    pid_kd: [1.5]
+
+    # Safety Limits
+    max_velocity: 30.0  # units: rad/s
+    max_torque: 10.0    # units: Nm
+
+    # Node Settings
+    state_publish_hz: 100.0
+    cmd_timeout_ms: 200
+
+    # Note on Modes for drv_can_dm (Damiao):
+    # 1 (MOTOR_MODE_POS): Position + Velocity mode (uses pos_des, vel_des)
+    # 2 (MOTOR_MODE_VEL): Velocity mode (uses vel_des)
+    # 3 (MOTOR_MODE_TRQ): Position + Force mode (uses pos_des, vel_des, trq_des)
+    # 4 (MOTOR_MODE_HYBRID): MIT mode (uses pos_des, vel_des, trq_des, kp, kd)

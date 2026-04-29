@@ -1,0 +1,21 @@
+led_node:
+  ros__parameters:
+    frame_id: "led"
+    command_topic: "led/command"
+    state_topic: "led/state"
+    tick_period_ms: 50
+    publish_period_ms: 100
+    publish_on_command: true
+    publish_on_startup: true
+
+    led_ids: [0]
+    transports: ["generic"]
+    names: ["sys-led_1"]
+
+    generic_sysfs_names: [""]
+    generic_active_levels: [0]
+
+    spi_dev_paths: ["/dev/spidev2.0"]
+    spi_num_leds: [1]
+    spi_speed_hz: [6400000]
+    spi_reset_bytes: [80]

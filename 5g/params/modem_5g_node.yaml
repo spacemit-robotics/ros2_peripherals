@@ -1,0 +1,33 @@
+modem_5g_node:
+  ros__parameters:
+    name: "MR880A:mr880a0"
+    uart_device: "auto"
+    baud: 9600
+    frame_id: "modem_5g"
+
+    status_topic: "modem_5g/status"
+    power_on_service: "modem_5g/power_on"
+    power_off_service: "modem_5g/power_off"
+    reset_service: "modem_5g/reset"
+    flight_mode_service: "modem_5g/set_flight_mode"
+    prefer_rat_service: "modem_5g/set_prefer_rat"
+    set_pdp_service: "modem_5g/set_pdp_context"
+    get_pdp_service: "modem_5g/get_pdp_context"
+    data_call_service: "modem_5g/data_call"
+    send_at_service: "modem_5g/send_at"
+
+    publish_on_startup: true
+    status_period_ms: 2000
+
+    default_cid: 1
+    default_pdp_type: 3
+    default_apn: ""
+    default_username: ""
+    default_password: ""
+
+    power_on_on_startup: false
+    apply_default_pdp_on_startup: false
+    start_data_on_startup: false
+
+    at_timeout_ms: 2000
+    at_response_max_bytes: 1024

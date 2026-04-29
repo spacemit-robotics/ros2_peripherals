@@ -1,0 +1,26 @@
+pm_node:
+  ros__parameters:
+    driver: "generic"
+    name: "main_batt"
+
+    frame_id: "power"
+    status_topic: "power/status"
+    switch_service: "power/set_switch"
+    poll_hz: 1.0
+    publish_on_startup: true
+
+    charger_node: "ip2317-charger"
+    capacity_node: "cw-bat"
+
+    device: "/dev/i2c-5"
+    i2c_addr: 64
+    adc_scale: 11.0
+
+    capacity_mah: 5000.0
+    max_voltage: 12.6
+    min_voltage: 9.0
+    warn_voltage: 10.0
+    crit_voltage: 9.5
+    max_temp: 60.0
+    # Optional: map SetPowerSwitch.channel -> backend channel name.
+    # switch_channels: ["main_5v", "aux_12v"]

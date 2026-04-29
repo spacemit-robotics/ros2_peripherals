@@ -1,0 +1,20 @@
+nfc_node:
+  ros__parameters:
+    transport: "i2c"
+    driver: "SI512"
+    name: "nfc0"
+    device: "/dev/i2c-5"
+    i2c_addr: 40
+    cs_pin: 0
+    baud: 115200
+    frame_id: "nfc"
+
+    tag_topic: "nfc/tag_detected"
+    poll_service: "nfc/poll"
+    read_service: "nfc/read_block"
+    write_service: "nfc/write_block"
+
+    auto_poll_enabled: true
+    poll_period_ms: 100
+    poll_timeout_ms: 50
+    publish_duplicates: false

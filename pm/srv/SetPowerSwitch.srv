@@ -1,0 +1,5 @@
+uint8 channel         # 电源开关通道号
+bool enable           # 开启/关闭
+---
+bool success
+string message

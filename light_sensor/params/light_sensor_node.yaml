@@ -1,0 +1,11 @@
+light_sensor_node:
+  ros__parameters:
+    driver: "W1160"
+    name: "als0"
+    device: "/dev/i2c-5"
+    i2c_addr: 72
+
+    frame_id: "light_sensor"
+    topic_name: "light_sensor/lux"
+    poll_hz: 5.0
+    variance: 0.0

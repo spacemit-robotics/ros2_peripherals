@@ -1,0 +1,11 @@
+key_node:
+  ros__parameters:
+    event_topic: "key/events"
+    frame_id: "key"
+    publish_period_ms: 10
+    key_ids: [0]
+    gpio_nums: [83]
+    active_lows: [1]
+    long_press_mss: [1500]
+    double_click_mss: [300]
+    key_names: ["power_key"]

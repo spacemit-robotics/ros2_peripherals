@@ -1,0 +1,10 @@
+uint8 cid             # 0 uses the default CID
+uint8 pdp_type        # 0 uses the default PDP type
+string apn
+string username
+string password
+---
+bool success
+int32 status_code
+string message
+Modem5gPdpContext context

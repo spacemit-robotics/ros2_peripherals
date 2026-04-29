@@ -1,0 +1,7 @@
+string ssid            # 可选：指定扫描结果过滤的 SSID，空字符串表示使用节点默认过滤条件
+uint32 max_results     # 可选：本次最多返回多少条，0 表示使用节点默认值
+---
+bool success
+string message
+uint32 total_results   # 实际扫描到的总数量，可能大于 results 长度
+WifiScanResult[] results

@@ -1,0 +1,8 @@
+string ssid
+string password
+bool fast_connect
+uint32 secure          # 可选：安全类型提示，0表示自动
+uint8[6] bssid         # 可选：指定BSSID，未指定可全0
+---
+bool success
+string message

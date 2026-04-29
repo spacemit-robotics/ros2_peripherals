@@ -1,0 +1,8 @@
+uint8 cid             # 0 uses the default CID
+bool start
+---
+bool success
+int32 status_code
+string message
+uint8 cid
+uint8 data_state      # 0=DISCONNECTED, 1=CONNECTING, 2=CONNECTED

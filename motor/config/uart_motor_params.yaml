@@ -1,0 +1,10 @@
+motor_node:
+  ros__parameters:
+    motor_type: "uart"
+    driver_name: "drv_uart_feetech"
+    motor_iface: "/dev/ttyACM0"
+    motor_ids: [1,2,3]
+    baud: 1000000
+    
+    state_publish_hz: 20.0
+    cmd_timeout_ms: 1000

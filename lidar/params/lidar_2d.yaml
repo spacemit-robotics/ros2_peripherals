@@ -1,0 +1,34 @@
+# LiDAR 2D Node parameters
+lidar_2d_node:
+  ros__parameters:
+    # Channel type: serial, tcp, or sim
+    channel_type: "serial"
+    
+    # LiDAR model (driver name, e.g., YDLIDAR, RPLIDAR)
+    model: ""
+    
+    # Serial port settings
+    serial_port: "/dev/ttyUSB0"
+    serial_baudrate: 230400
+    
+    # TCP/Ethernet settings
+    tcp_ip: "192.168.0.7"
+    tcp_port: 2368
+    
+    # ROS topic settings
+    frame_id: "laser_frame"
+    topic_name: "scan"
+    
+    # Scan parameters
+    scan_frequency: 10.0  # Hz
+    angle_min: -3.14159   # rad
+    angle_max: 3.14159    # rad
+    range_min: 0.1        # meters
+    range_max: 30.0       # meters
+    
+    # Scan processing
+    inverted: false
+    flip_x_axis: false
+    angle_compensate: false
+    scan_bins: 720
+    return_mode: 0        # 0=strongest, 1=last, 2=dual

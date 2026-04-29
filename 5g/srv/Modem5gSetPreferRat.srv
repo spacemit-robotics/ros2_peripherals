@@ -1,0 +1,6 @@
+uint8 rat             # 1=NR5G_SA, 2=NR5G_NSA, 3=LTE, 4=WCDMA, 5=GSM
+---
+bool success
+int32 status_code
+string message
+uint8 rat

@@ -1,0 +1,6 @@
+bool enable
+---
+bool success
+int32 status_code
+string message
+bool flight_mode_enabled

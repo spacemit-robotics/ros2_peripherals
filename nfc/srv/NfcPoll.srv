@@ -1,0 +1,5 @@
+uint32 timeout_ms     # 轮询超时时间 (ms)
+---
+bool success
+string message
+NfcTagInfo tag_info  # 检测到的标签信息

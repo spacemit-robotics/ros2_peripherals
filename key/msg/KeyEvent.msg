@@ -1,0 +1,3 @@
+std_msgs/Header header
+uint32 key_id
+uint8 event_type       # 0=NONE, 1=PRESSED, 2=RELEASED, 3=CLICK, 4=DOUBLE_CLICK, 5=LONG_PRESS_START, 6=LONG_PRESS_HOLD, 7=LONG_PRESS_UP, 8=REPEAT

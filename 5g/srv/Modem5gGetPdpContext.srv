@@ -1,0 +1,7 @@
+uint8 cid             # 0 uses the default CID
+---
+bool success
+int32 status_code
+string message
+Modem5gPdpContext context
+string password
