@@ -14,7 +14,7 @@ motor_node:
     
     # EtherCAT Specific
     # Bus cycle time in milliseconds
-    ecat_cycle_ms: 2
+    ecat_cycle_ms: 5
     # Position of motors on the EtherCAT bus (if different from 0, 1, ...)
     # slave_indices: [0, 1]
     # Whether to block in constructor waiting for slave enablement and zero-anchoring

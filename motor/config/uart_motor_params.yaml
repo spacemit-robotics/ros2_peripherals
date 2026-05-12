@@ -2,7 +2,7 @@ motor_node:
   ros__parameters:
     motor_type: "uart"
     driver_name: "drv_uart_feetech"
-    motor_iface: "/dev/ttyACM0"
+    motor_iface: "/dev/ttyACM1"
     motor_ids: [1,2,3]
     baud: 1000000
     

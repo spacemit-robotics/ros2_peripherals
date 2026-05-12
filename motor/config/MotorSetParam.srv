@@ -1,0 +1,6 @@
+uint32 motor_id
+uint32 reg_address
+float32 value
+---
+bool success
+string message

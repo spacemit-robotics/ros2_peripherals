@@ -2,6 +2,8 @@ extern "C" {
 #include <motor.h>
 }
 
+#include <csignal>
+#include <atomic>
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
@@ -22,30 +24,30 @@ using std::chrono_literals::operator""s;
 
 namespace {
 
+using MotorCommand = peripherals::msg::MotorCommand;
+
 /**
- * @brief Map MotorCommand.msg mode field to motor.h enum
- * motor_mode enum: 0=IDLE, 1=POS, 2=VEL, 3=TRQ, 4=HYBRID,
- *                  5=CSP, 6=CSV, 7=CST, 8=HM
+ * @brief Map MotorCommand.msg mode field to motor.h enum.
+ * Message constants (MODE_*) are defined in MotorCommand.msg and
+ * intentionally aligned 1:1 with motor.h MOTOR_MODE_* values.
  */
 static uint32_t map_mode(uint8_t msg_mode) {
     switch (msg_mode) {
-        case MOTOR_MODE_IDLE:
-            return MOTOR_MODE_IDLE;
-        case MOTOR_MODE_POS:
+        case MotorCommand::MODE_POS:
             return MOTOR_MODE_POS;
-        case MOTOR_MODE_VEL:
+        case MotorCommand::MODE_VEL:
             return MOTOR_MODE_VEL;
-        case MOTOR_MODE_TRQ:
+        case MotorCommand::MODE_TRQ:
             return MOTOR_MODE_TRQ;
-        case MOTOR_MODE_HYBRID:
+        case MotorCommand::MODE_HYBRID:
             return MOTOR_MODE_HYBRID;
-        case MOTOR_MODE_CSP:
+        case MotorCommand::MODE_CSP:
             return MOTOR_MODE_CSP;
-        case MOTOR_MODE_CSV:
+        case MotorCommand::MODE_CSV:
             return MOTOR_MODE_CSV;
-        case MOTOR_MODE_CST:
+        case MotorCommand::MODE_CST:
             return MOTOR_MODE_CST;
-        case MOTOR_MODE_HM:
+        case MotorCommand::MODE_HM:
             return MOTOR_MODE_HM;
         default:
             return MOTOR_MODE_IDLE;
@@ -90,6 +92,17 @@ static float clampf(float v, float lo, float hi) {
     }
     return v;
 }
+
+/**
+ * @brief Config struct matching drv_ethercat_jmc adapter's motor_config_ecat_jmc_t.
+ *        Must stay in sync with the driver-side definition.
+ */
+struct ecat_jmc_config {
+    uint32_t cycle_ms;
+    uint32_t profile_vel;
+    uint32_t profile_acc;
+    uint32_t profile_dec;
+};
 
 }  // namespace
 
@@ -142,9 +155,6 @@ public:
         profile_acc_ = normalize_vec_param(profile_acc_, motor_ids_.size(), "profile_acc");
         profile_dec_ = normalize_vec_param(profile_dec_, motor_ids_.size(), "profile_dec");
 
-        // Initialize cycle time storage for ECAT
-        uint32_t common_cycle_ms = static_cast<uint32_t>(ecat_cycle_ms_);
-
         for (size_t i = 0; i < motor_ids_.size(); ++i) {
             const auto id = static_cast<uint32_t>(motor_ids_[i]);
             motor_dev* dev = nullptr;
@@ -163,8 +173,13 @@ public:
                     (i < slave_indices_.size()) ? static_cast<uint16_t>(slave_indices_[i]) :
                                                 static_cast<uint16_t>(i);
 
-                // For JMC EtherCAT, the third argument is simply the cycle_ms (as a uint32_t pointer)
-                dev = motor_alloc_ecat(driver_name_.c_str(), slave_idx, &common_cycle_ms);
+                // Pass full config struct matching driver's motor_config_ecat_jmc_t
+                ecat_jmc_config ecat_cfg{};
+                ecat_cfg.cycle_ms = static_cast<uint32_t>(ecat_cycle_ms_);
+                ecat_cfg.profile_vel = static_cast<uint32_t>(profile_vel_[i]);
+                ecat_cfg.profile_acc = static_cast<uint32_t>(profile_acc_[i]);
+                ecat_cfg.profile_dec = static_cast<uint32_t>(profile_dec_[i]);
+                dev = motor_alloc_ecat(driver_name_.c_str(), slave_idx, &ecat_cfg);
             } else {
                 throw std::runtime_error("Unsupported motor_type: " + motor_type_);
             }
@@ -188,6 +203,10 @@ public:
         // If EtherCAT, wait for ready and anchor logic zero
         if (motor_type_ == "ecat" && wait_for_ready_) {
             wait_for_ecat_ready();
+            // Auto-enable after successful EtherCAT initialization so that
+            // incoming commands are not silently dropped.
+            enabled_ = true;
+            RCLCPP_INFO(get_logger(), "Auto-enabled after EtherCAT ready");
         }
 
         // Register parameter callback
@@ -280,6 +299,10 @@ private:
             if (all_enabled) {
                 if (++stable_counts >= required_stable) {
                     RCLCPP_INFO(get_logger(), "All EtherCAT motors ready and anchored at physics-zero.");
+                    // Sync internal state to the anchored state
+                    for (size_t i = 0; i < last_cmds_.size(); ++i) {
+                        last_cmds_[i] = init_cmds[i];
+                    }
                     break;
                 }
             } else {
@@ -365,6 +388,10 @@ private:
 
     void set_all_idle() {
         for (auto& c : last_cmds_) {
+            // Use MOTOR_MODE_IDLE for all motor types.
+            // Previously CAN used POS with pos_des=0, which causes violent
+            // snap-back if the motor is not at zero position, risking
+            // mechanical damage. True IDLE disables torque output safely.
             c.mode = MOTOR_MODE_IDLE;
             c.pos_des = 0.0f;
             c.vel_des = 0.0f;
@@ -466,6 +493,9 @@ private:
 
     void on_cmd(const peripherals::msg::MotorCommandArray& msg) {
         if (!enabled_) {
+            RCLCPP_WARN_THROTTLE(
+                get_logger(), *get_clock(), 5000,
+                "Received command but node is DISABLED. Call /motor/enable service first.");
             return;
         }
 
@@ -477,6 +507,9 @@ private:
             }
             const auto idx = it->second;
             auto cmd = to_motor_cmd(cmd_msg);
+            RCLCPP_DEBUG(
+                get_logger(), "Cmd received: id=%u, msg_mode=%u -> mapped_mode=%u, pos=%.4f",
+                id, cmd_msg.mode, cmd.mode, cmd.pos_des);
 
             // Validate mode support
             if (!is_mode_supported(cmd.mode)) {
@@ -584,11 +617,38 @@ private:
     OnSetParametersCallbackHandle::SharedPtr param_cb_handle_;
 };
 
+// 原子标志位用于信号安全退出，避免在信号处理上下文中调用非异步信号安全函数
+static std::atomic<bool> g_shutdown_requested{false};
+
+void handle_sigint(int sig) {
+    (void)sig;
+    // 仅设置原子标志位，不调用任何非 async-signal-safe 函数
+    g_shutdown_requested.store(true, std::memory_order_relaxed);
+}
+
 int main(int argc, char** argv) {
     rclcpp::init(argc, argv);
+
     try {
-        rclcpp::spin(std::make_shared<MotorNode>());
-    } catch (const std::exception& e) { fprintf(stderr, "motor_node exception: %s\n", e.what()); }
+        auto node = std::make_shared<MotorNode>();
+
+        // 覆盖驱动库可能安装的信号处理函数
+        std::signal(SIGINT, handle_sigint);
+        std::signal(SIGTERM, handle_sigint);
+
+        // 使用手动轮询代替 spin()，以便检测原子标志位
+        rclcpp::executors::SingleThreadedExecutor executor;
+        executor.add_node(node);
+        while (rclcpp::ok() && !g_shutdown_requested.load(std::memory_order_relaxed)) {
+            executor.spin_some(std::chrono::milliseconds(10));
+        }
+
+        RCLCPP_INFO(node->get_logger(), "Shutdown requested, cleaning up motor_node...");
+        node.reset();
+    } catch (const std::exception& e) {
+        fprintf(stderr, "motor_node exception: %s\n", e.what());
+    }
+
     rclcpp::shutdown();
     return 0;
 }
