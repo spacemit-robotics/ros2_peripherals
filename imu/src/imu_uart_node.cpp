@@ -5,15 +5,15 @@
 
 // IMU DDS Publisher Node - Compatible with ros2 run
 
+#include <sys/time.h>
 #include <unistd.h>
 
 #include <atomic>
-#include <chrono>
 #include <cmath>
 #include <csignal>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <thread>
 #include <string>
 
 #include <MyImuPublisher.h>
@@ -29,6 +29,24 @@ static void signalHandler(int signum)
 {
     (void)signum;
     g_running = false;
+}
+
+static void timestampUsToRosTime(
+    uint64_t timestamp_us,
+    int32_t* seconds_out,
+    uint32_t* nanoseconds_out)
+{
+    if (timestamp_us == 0U) {
+        struct timeval tv;
+        gettimeofday(&tv, nullptr);
+
+        *seconds_out = static_cast<int32_t>(tv.tv_sec);
+        *nanoseconds_out = static_cast<uint32_t>(tv.tv_usec * 1000U);
+        return;
+    }
+
+    *seconds_out = static_cast<int32_t>(timestamp_us / 1000000ULL);
+    *nanoseconds_out = static_cast<uint32_t>((timestamp_us % 1000000ULL) * 1000ULL);
 }
 
 class ImuUartNode
@@ -100,28 +118,23 @@ public:
         struct imu_data data;
         uint32_t msg_count = 0;
 
-        // Calculate period from sample rate
-        const auto period = std::chrono::milliseconds(1000 / sample_rate_);
-        auto next_time = std::chrono::steady_clock::now();
+        const useconds_t period_us = static_cast<useconds_t>(1000000U / sample_rate_);
 
         while (g_running) {
             // Read data from real IMU
             int ret = imu_read(imu_dev_, &data);
             if (ret != 0) {
                 std::cerr << "IMU read error" << std::endl;
-                next_time += period;
-                std::this_thread::sleep_until(next_time);
+                usleep(period_us);
                 continue;
             }
-            // Get current timestamp
-            auto now = std::chrono::system_clock::now();
-            auto duration = now.time_since_epoch();
-            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(duration);
-            auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(duration - seconds);
+            int32_t seconds = 0;
+            uint32_t nanoseconds = 0;
+            timestampUsToRosTime(data.timestamp_us, &seconds, &nanoseconds);
 
             // Set Header
-            imu_msg.header().stamp().sec(static_cast<int32_t>(seconds.count()));
-            imu_msg.header().stamp().nanosec(static_cast<uint32_t>(nanoseconds.count()));
+            imu_msg.header().stamp().sec(seconds);
+            imu_msg.header().stamp().nanosec(nanoseconds);
             imu_msg.header().frame_id("imu_link");
 
             // Set orientation from quaternion (w, x, y, z)
@@ -154,9 +167,7 @@ public:
                     << std::endl;
             }
 
-            // Precise 50Hz timing
-            next_time += period;
-            std::this_thread::sleep_until(next_time);
+            usleep(period_us);
         }
 
         std::cout << "\nStopped. Total messages sent: " << msg_count << std::endl;
