@@ -149,6 +149,7 @@ private:
     {
         uint32_t io_id;
         uint8_t event;
+        uint64_t timestamp_us;
     };
 
     struct IoContext
@@ -173,19 +174,19 @@ private:
     };
 
     static void on_input_event(
-        struct misc_dev * /*dev*/, enum misc_event ev, void * args)
+        struct misc_dev * /*dev*/, enum misc_event ev, uint64_t timestamp_us, void * args)
     {
         auto * context = static_cast<IoContext *>(args);
         if (context == nullptr || context->node == nullptr) {
             return;
         }
-        context->node->enqueue_event(context->io_id, static_cast<uint8_t>(ev));
+        context->node->enqueue_event(context->io_id, static_cast<uint8_t>(ev), timestamp_us);
     }
 
-    void enqueue_event(uint32_t io_id, uint8_t event)
+    void enqueue_event(uint32_t io_id, uint8_t event, uint64_t timestamp_us)
     {
         std::lock_guard<std::mutex> lock(event_mutex_);
-        event_queue_.push_back(EventRecord{io_id, event});
+        event_queue_.push_back(EventRecord{io_id, event, timestamp_us});
     }
 
     void validate_config(
@@ -363,10 +364,9 @@ private:
             local_queue.swap(event_queue_);
         }
 
-        const auto stamp = now();
         for (const auto & record : local_queue) {
             peripherals_misc_io_node::msg::MiscIoEvent msg;
-            msg.header.stamp = stamp;
+            msg.header.stamp = timestamp_from_us(record.timestamp_us);
             msg.header.frame_id = frame_id_;
             msg.io_id = record.io_id;
             msg.event = record.event;
@@ -401,6 +401,18 @@ private:
         msg.dir = static_cast<uint8_t>(io.dir);
         msg.active = (value != 0);
         state_pub_->publish(msg);
+    }
+
+    rclcpp::Time timestamp_from_us(uint64_t timestamp_us) const
+    {
+        if (timestamp_us == 0U) {
+            return now();
+        }
+
+        const auto seconds = static_cast<int64_t>(timestamp_us / 1000000ULL);
+        const auto nanoseconds =
+            static_cast<uint32_t>((timestamp_us % 1000000ULL) * 1000ULL);
+        return rclcpp::Time(seconds, nanoseconds, get_clock()->get_clock_type());
     }
 
     void cleanup_resources()
