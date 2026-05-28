@@ -1,0 +1,83 @@
+module: middleware/ros2/peripherals/lidar
+
+tests:
+  - name: lidar-static-launch-contract
+    description: >-
+      Statically verifies the ROS2 launch description and default parameter file
+      expose the lidar node's launch arguments, topic wiring and scan parameter
+      defaults without starting a simulator or requiring physical lidar hardware.
+    category: functional
+    scopes: [pr]
+    timeout_s: 180
+    workdir: sdk
+    artifacts:
+      - output/test/pr/middleware__ros2__peripherals__lidar/modules/middleware__ros2__peripherals__lidar/lidar-static-launch-contract.log
+    command: |
+      bash middleware/ros2/peripherals/lidar/tests/test_static_launch_contract.sh
+
+  - name: lidar-invalid-channel-type
+    description: >-
+      Verifies the lidar ROS2 node rejects an unsupported channel type with an
+      explicit error message instead of hanging or silently succeeding.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    artifacts:
+      - output/test/pr/middleware__ros2__peripherals__lidar/modules/middleware__ros2__peripherals__lidar/lidar-invalid-channel-type.log
+      - output/test/pr/middleware__ros2__peripherals__lidar/modules/middleware__ros2__peripherals__lidar/lidar_invalid_channel_type.run.log
+    command: |
+      bash middleware/ros2/peripherals/lidar/tests/test_invalid_channel_type.sh
+
+  - name: lidar-launch-override-contract
+    description: >-
+      Verifies launch defaults and overrideable parameters are wired into the
+      lidar ROS2 node so callers can configure topics, frames and scan limits
+      without editing source files.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    artifacts:
+      - output/test/pr/middleware__ros2__peripherals__lidar/modules/middleware__ros2__peripherals__lidar/logs/lidar_launch_override_contract.log
+    command: |
+      bash middleware/ros2/peripherals/lidar/tests/test_launch_override_contract.sh
+
+  - name: lidar-serial-invalid-device
+    description: >-
+      Verifies the serial lidar path fails fast with an explicit node exception
+      when the configured device path does not exist, instead of hanging or
+      silently succeeding without hardware.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    artifacts:
+      - output/test/pr/middleware__ros2__peripherals__lidar/modules/middleware__ros2__peripherals__lidar/logs/lidar_serial_invalid_device.log
+      - output/test/pr/middleware__ros2__peripherals__lidar/modules/middleware__ros2__peripherals__lidar/lidar_serial_invalid_device.run.log
+    command: |
+      bash middleware/ros2/peripherals/lidar/tests/test_serial_invalid_device.sh
+
+  - name: lidar-hardware-uart-smoke
+    description: >-
+      Manually verifies the ROS2 lidar node can initialize a real UART lidar,
+      start scanning and publish at least one valid sensor_msgs/LaserScan
+      message on the configured topic.
+    category: functional
+    scopes: [manual]
+    timeout_s: 180
+    workdir: sdk
+    requires:
+      hardware:
+        - >-
+          Supported UART lidar connected to the target board. Defaults are
+          LIDAR_TEST_MODEL=YDLIDAR and LIDAR_TEST_DEV_PATH=/dev/ttyUSB0;
+          optional LIDAR_TEST_BAUD, LIDAR_TEST_TOPIC and LIDAR_TEST_FRAME_ID
+          can be exported before running.
+      supervision: true
+    artifacts:
+      - output/test/manual/middleware__ros2__peripherals__lidar/modules/middleware__ros2__peripherals__lidar/logs/lidar_hardware_uart_smoke.log
+      - output/test/manual/middleware__ros2__peripherals__lidar/modules/middleware__ros2__peripherals__lidar/lidar_hardware_uart_node.log
+      - output/test/manual/middleware__ros2__peripherals__lidar/modules/middleware__ros2__peripherals__lidar/lidar_hardware_uart_scan.log
+    command: |
+      bash middleware/ros2/peripherals/lidar/tests/test_hw_uart_smoke.sh
