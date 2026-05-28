@@ -97,7 +97,7 @@ private:
         // UART params
         serial_port_ =
             declare_parameter<std::string>("serial_port", "/dev/ttyUSB0");
-        serial_baudrate_ = declare_parameter<int>("serial_baudrate", 230400);
+            serial_baudrate_ = declare_parameter<int>("serial_baudrate", 230400);
 
         // Ethernet params
         tcp_ip_ = declare_parameter<std::string>("tcp_ip", "192.168.0.7");

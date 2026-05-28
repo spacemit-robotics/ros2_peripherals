@@ -27,11 +27,11 @@ def generate_launch_description():
             default_value='/dev/ttyUSB0',
             description='Serial port for UART connection'
         ),
-        DeclareLaunchArgument(
-            'serial_baudrate',
-            default_value='230400',
-            description='Serial baudrate'
-        ),
+            DeclareLaunchArgument(
+                'serial_baudrate',
+                default_value='230400',
+                description='Serial baudrate'
+            ),
         DeclareLaunchArgument(
             'tcp_ip',
             default_value='192.168.0.7',
