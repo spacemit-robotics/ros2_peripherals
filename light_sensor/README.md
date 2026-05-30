@@ -31,7 +31,7 @@
 - `poll_hz`：采样与发布频率，默认 `5.0`
 - `variance`：消息里的测量方差，默认 `0.0`
 
-参数示例见 [params/light_sensor_node.yaml](/home/huanghaiqiang/docker_cross_test/robotic_sdk_not_git/middleware/ros2/peripherals/light_sensor/params/light_sensor_node.yaml)。
+参数示例见 [params/light_sensor_node.yaml](params/light_sensor_node.yaml)。
 
 注意：
 

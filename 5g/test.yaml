@@ -1,0 +1,36 @@
+## Copyright (C) 2026 SpacemiT (Hangzhou) Technology Co. Ltd.
+## SPDX-License-Identifier: Apache-2.0
+
+module: middleware/ros2/peripherals/5g
+
+tests:
+  - name: 5g-ros-functional
+    description: Verifies 5G ROS status snapshots and PDP, data call, flight mode, and AT services using a fake modem backend.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    command: |
+      bash middleware/ros2/peripherals/5g/tests/test_5g_ros_contract.sh functional
+
+  - name: 5g-ros-error-paths
+    description: Verifies bad modem config and invalid RAT, CID, PDP type, APN, and AT requests are rejected.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    command: |
+      bash middleware/ros2/peripherals/5g/tests/test_5g_ros_contract.sh error-paths
+
+  - name: 5g-hardware-smoke
+    description: Manually verifies a real MR880A modem can answer hardware info, SIM, registration, or signal queries.
+    category: functional
+    scopes: [manual]
+    timeout_s: 180
+    workdir: sdk
+    requires:
+      hardware:
+        - MR880A 5G modem connected to MODEM_5G_UART_DEV, or auto-detect support.
+      supervision: true
+    command: |
+      bash components/peripherals/5g/tests/test_hw_mr880a_smoke.sh

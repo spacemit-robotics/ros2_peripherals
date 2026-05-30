@@ -1,0 +1,36 @@
+## Copyright (C) 2026 SpacemiT (Hangzhou) Technology Co. Ltd.
+## SPDX-License-Identifier: Apache-2.0
+
+module: middleware/ros2/peripherals/key
+
+tests:
+  - name: key-ros-functional
+    description: Verifies key backend callbacks are translated into ROS KeyEvent messages with configured key IDs and frame IDs.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    command: |
+      bash middleware/ros2/peripherals/key/tests/test_key_ros_contract.sh functional
+
+  - name: key-ros-error-paths
+    description: Verifies invalid key parameter arrays and GPIO numbers fail during node construction.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    command: |
+      bash middleware/ros2/peripherals/key/tests/test_key_ros_contract.sh error-paths
+
+  - name: key-hardware-smoke
+    description: Manually verifies a configured GPIO key can generate events on real hardware through the native key smoke test.
+    category: functional
+    scopes: [manual]
+    timeout_s: 180
+    workdir: sdk
+    requires:
+      hardware:
+        - GPIO key wired and configured for KEY_HW_GPIO or default board mapping.
+      supervision: true
+    command: |
+      bash components/peripherals/key/tests/test_hw_key_smoke.sh

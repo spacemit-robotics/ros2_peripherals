@@ -49,7 +49,7 @@
 - `scan_max_results`：单次最多发布/返回多少条扫描结果，默认 `32`，合法范围 `1..256`
 - `scan_ssid`：节点默认扫描过滤条件，默认空字符串表示不过滤；当 `WifiScan.srv` 里的 `ssid` 为空时使用这里的值
 
-参数示例见 [params/wifi_node.yaml](/home/huanghaiqiang/docker_cross_test/robotic_sdk_not_git/middleware/ros2/peripherals/wifi/params/wifi_node.yaml)。
+参数示例见 [params/wifi_node.yaml](params/wifi_node.yaml)。
 
 ## 构建前提
 

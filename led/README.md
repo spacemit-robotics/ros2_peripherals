@@ -49,7 +49,7 @@
 - `spi_speed_hz`：SPI 频率
 - `spi_reset_bytes`：WS2812 reset bytes
 
-参数示例见 [params/led_node.yaml](/home/huanghaiqiang/workspace/k3_robot_sdk/robotics_dev/middleware/ros2/peripherals/led/params/led_node.yaml)。
+参数示例见 [params/led_node.yaml](params/led_node.yaml)。
 
 ## 构建前提
 

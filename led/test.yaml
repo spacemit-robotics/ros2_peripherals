@@ -1,0 +1,36 @@
+## Copyright (C) 2026 SpacemiT (Hangzhou) Technology Co. Ltd.
+## SPDX-License-Identifier: Apache-2.0
+
+module: middleware/ros2/peripherals/led
+
+tests:
+  - name: led-ros-functional
+    description: Verifies the ROS2 LED node maps commands to LED backend calls and publishes state updates using a fake LED device.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    command: |
+      bash middleware/ros2/peripherals/led/tests/test_led_ros_contract.sh functional
+
+  - name: led-ros-error-paths
+    description: Verifies duplicate LED IDs and backend allocation failures are rejected with clear errors.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    command: |
+      bash middleware/ros2/peripherals/led/tests/test_led_ros_contract.sh error-paths
+
+  - name: led-hardware-smoke
+    description: Manually verifies a configured LED can be driven on real hardware through the native LED smoke test.
+    category: functional
+    scopes: [manual]
+    timeout_s: 180
+    workdir: sdk
+    requires:
+      hardware:
+        - LED available through LED_SYSFS_NAME or the default generic LED mapping.
+      supervision: true
+    command: |
+      bash components/peripherals/led/tests/test_hw_led_generic_smoke.sh

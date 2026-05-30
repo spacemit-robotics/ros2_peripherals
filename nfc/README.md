@@ -48,7 +48,7 @@
 - `poll_timeout_ms`：每次轮询调用 `nfc_poll()` 的超时，默认 `50`
 - `publish_duplicates`：同一张卡持续贴住时是否重复发布，默认 `false`
 
-参数示例见 [params/nfc_node.yaml](/home/huanghaiqiang/docker_cross_test/robotic_sdk_not_git/middleware/ros2/peripherals/nfc/params/nfc_node.yaml)。
+参数示例见 [params/nfc_node.yaml](params/nfc_node.yaml)。
 
 注意：
 

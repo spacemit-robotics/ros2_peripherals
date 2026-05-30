@@ -69,7 +69,7 @@
 - `at_timeout_ms`：AT 透传默认超时，默认 `2000`
 - `at_response_max_bytes`：AT 响应缓冲区大小，默认 `1024`
 
-参数示例见 [params/modem_5g_node.yaml](/home/huanghaiqiang/workspace/k3_robot_sdk/robotics_dev/middleware/ros2/peripherals/5g/params/modem_5g_node.yaml)。
+参数示例见 [params/modem_5g_node.yaml](params/modem_5g_node.yaml)。
 
 ## 构建前提
 

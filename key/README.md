@@ -30,22 +30,22 @@
 - `key_ids`：逻辑按键 ID 数组
 - `gpio_nums`：GPIO 编号数组
 - `active_lows`：是否低电平有效，`1/0`
-- `long_press_mss`：长按阈值数组，单位 ms
-- `double_click_mss`：双击阈值数组，单位 ms
+- `long_press_ms`：长按阈值数组，单位 ms
+- `double_click_ms`：双击阈值数组，单位 ms
 - `key_names`：仅用于日志打印
 
-参数示例见 [params/key_node.yaml](/home/huanghaiqiang/docker_cross_test/robotic_sdk_not_git/middleware/ros2/peripherals/key/params/key_node.yaml)。
+参数示例见 [params/key_node.yaml](params/key_node.yaml)。
 
 注意：ROS 2 参数文件顶层键必须匹配实际节点名。本节点构造时使用的是 `key_node`，不是包名 `peripherals_key_node`。
 
-如果要一次注册多个按键，需要把 `key_ids`、`gpio_nums`、`active_lows`、`long_press_mss`、`double_click_mss` 写成等长数组；`key_names` 如果提供，也必须和它们等长。数组下标一一对应，例如第 `i` 个按键会组合使用：
-注意，如果不需要检查双击事件，请把double_click_mss参数设为0，否则会等待超时后，再返回单击事件
+如果要一次注册多个按键，需要把 `key_ids`、`gpio_nums`、`active_lows`、`long_press_ms`、`double_click_ms` 写成等长数组；`key_names` 如果提供，也必须和它们等长。数组下标一一对应，例如第 `i` 个按键会组合使用：
+注意，如果不需要检查双击事件，请把double_click_ms参数设为0，否则会等待超时后，再返回单击事件
 
 - `key_ids[i]`
 - `gpio_nums[i]`
 - `active_lows[i]`
-- `long_press_mss[i]`
-- `double_click_mss[i]`
+- `long_press_ms[i]`
+- `double_click_ms[i]`
 - `key_names[i]`
 
 多按键配置示例：
@@ -60,8 +60,8 @@ key_node:
     key_ids:          [0,        1,         2]
     gpio_nums:        [83,       84,        85]
     active_lows:      [1,        1,         0]
-    long_press_mss:   [1500,     2000,      1000]
-    double_click_mss: [300,      300,       250]
+    long_press_ms:   [1500,     2000,      1000]
+    double_click_ms: [300,      300,       250]
     key_names:        ["power",  "reset",   "mode"]
 ```
 
@@ -75,7 +75,7 @@ key_node:
 
 - `key_ids` 不能为空，且每项必须 `>= 0`
 - `gpio_nums` 每项必须 `> 0`
-- `long_press_mss` 和 `double_click_mss` 每项必须 `>= 0`
+- `long_press_ms` 和 `double_click_ms` 每项必须 `>= 0`
 - `key_names` 可以省略；省略时节点会自动生成默认名字
 - 任一数组长度不一致时，节点会启动失败
 

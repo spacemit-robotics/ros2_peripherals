@@ -57,7 +57,7 @@
 - `capacity_mah`、`max_voltage`、`min_voltage`、`warn_voltage`、`crit_voltage`、`max_temp`：透传到底层 `pm_config`
 - `switch_channels`：service 的通道号到字符串通道名的映射数组，例如 `["main_5v", "aux_12v"]`
 
-参数示例见 [params/pm_node.yaml](/home/huanghaiqiang/docker_cross_test/robotic_sdk_not_git/middleware/ros2/peripherals/pm/params/pm_node.yaml)。
+参数示例见 [params/pm_node.yaml](params/pm_node.yaml)。
 
 注意：
 

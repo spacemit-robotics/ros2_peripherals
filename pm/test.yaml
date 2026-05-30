@@ -1,0 +1,36 @@
+## Copyright (C) 2026 SpacemiT (Hangzhou) Technology Co. Ltd.
+## SPDX-License-Identifier: Apache-2.0
+
+module: middleware/ros2/peripherals/pm
+
+tests:
+  - name: pm-ros-functional
+    description: Verifies PM ROS status publication and SetPowerSwitch service behavior using a fake power backend.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    command: |
+      bash middleware/ros2/peripherals/pm/tests/test_pm_ros_contract.sh functional
+
+  - name: pm-ros-error-paths
+    description: Verifies invalid driver configuration, unconfigured switch channels, and backend read errors are handled.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    command: |
+      bash middleware/ros2/peripherals/pm/tests/test_pm_ros_contract.sh error-paths
+
+  - name: pm-hardware-smoke
+    description: Manually verifies a real PM backend can produce power state samples through the native smoke test.
+    category: functional
+    scopes: [manual]
+    timeout_s: 180
+    workdir: sdk
+    requires:
+      hardware:
+        - Power management device configured by PM_HW_CHARGER_NODE and PM_HW_CAPACITY_NODE or defaults.
+      supervision: true
+    command: |
+      bash components/peripherals/pm/tests/test_hw_pm_generic_smoke.sh

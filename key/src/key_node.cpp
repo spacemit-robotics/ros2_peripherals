@@ -75,12 +75,12 @@ public:
             const auto key_ids = load_int_array(this, "key_ids", {0});
             const auto gpio_nums = load_int_array(this, "gpio_nums", {74});
             const auto active_lows = load_int_array(this, "active_lows", {1});
-            const auto long_press_mss = load_int_array(this, "long_press_mss", {1500});
-            const auto double_click_mss = load_int_array(this, "double_click_mss", {300});
+            const auto long_press_ms = load_int_array(this, "long_press_ms", {1500});
+            const auto double_click_ms = load_int_array(this, "double_click_ms", {300});
             const auto key_names = load_string_array(this, "key_names", {});
 
             validate_config(
-                key_ids, gpio_nums, active_lows, long_press_mss, double_click_mss, key_names);
+                key_ids, gpio_nums, active_lows, long_press_ms, double_click_ms, key_names);
 
             publisher_ = create_publisher<peripherals_key_node::msg::KeyEvent>(topic_name, 32);
 
@@ -95,8 +95,8 @@ public:
                     static_cast<uint32_t>(key_ids[i]),
                     static_cast<int>(gpio_nums[i]),
                     active_lows[i] != 0,
-                    static_cast<int>(long_press_mss[i]),
-                    static_cast<int>(double_click_mss[i]),
+                    static_cast<int>(long_press_ms[i]),
+                    static_cast<int>(double_click_ms[i]),
                     key_names.empty() ? default_key_name(key_ids[i], gpio_nums[i]) : key_names[i]);
             }
 
@@ -219,8 +219,8 @@ private:
         const std::vector<int64_t> & key_ids,
         const std::vector<int64_t> & gpio_nums,
         const std::vector<int64_t> & active_lows,
-        const std::vector<int64_t> & long_press_mss,
-        const std::vector<int64_t> & double_click_mss,
+        const std::vector<int64_t> & long_press_ms,
+        const std::vector<int64_t> & double_click_ms,
         const std::vector<std::string> & key_names)
     {
         const auto key_count = key_ids.size();
@@ -237,8 +237,8 @@ private:
 
         same_size(gpio_nums.size(), "gpio_nums");
         same_size(active_lows.size(), "active_lows");
-        same_size(long_press_mss.size(), "long_press_mss");
-        same_size(double_click_mss.size(), "double_click_mss");
+        same_size(long_press_ms.size(), "long_press_ms");
+        same_size(double_click_ms.size(), "double_click_ms");
         if (!key_names.empty()) {
             same_size(key_names.size(), "key_names");
         }
@@ -250,8 +250,8 @@ private:
             if (gpio_nums[i] <= 0) {
                 throw std::invalid_argument("gpio_nums must be > 0");
             }
-            if (long_press_mss[i] < 0 || double_click_mss[i] < 0) {
-                throw std::invalid_argument("long_press_mss/double_click_mss must be >= 0");
+            if (long_press_ms[i] < 0 || double_click_ms[i] < 0) {
+                throw std::invalid_argument("long_press_ms/double_click_ms must be >= 0");
             }
         }
     }

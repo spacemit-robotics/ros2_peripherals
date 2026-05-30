@@ -1,0 +1,36 @@
+## Copyright (C) 2026 SpacemiT (Hangzhou) Technology Co. Ltd.
+## SPDX-License-Identifier: Apache-2.0
+
+module: middleware/ros2/peripherals/wifi
+
+tests:
+  - name: wifi-ros-functional
+    description: Verifies WiFi ROS status, scan, connect, and disconnect behavior using a fake WiFi backend.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    command: |
+      bash middleware/ros2/peripherals/wifi/tests/test_wifi_ros_contract.sh functional
+
+  - name: wifi-ros-error-paths
+    description: Verifies invalid scan limits, init failures, empty SSID connect requests, and scan timeouts are reported.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    command: |
+      bash middleware/ros2/peripherals/wifi/tests/test_wifi_ros_contract.sh error-paths
+
+  - name: wifi-hardware-smoke
+    description: Manually verifies a real NetworkManager WiFi device can enable and scan through the native smoke test.
+    category: functional
+    scopes: [manual]
+    timeout_s: 180
+    workdir: sdk
+    requires:
+      hardware:
+        - WiFi device managed by NetworkManager with nmcli available.
+      supervision: true
+    command: |
+      bash components/peripherals/wifi/tests/test_hw_wifi_smoke.sh

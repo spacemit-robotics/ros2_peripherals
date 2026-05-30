@@ -55,7 +55,7 @@
 - `frame_id`：消息头 `frame_id`，默认 `misc_io`
 - `publish_period_ms`：状态发布周期，默认 `100`
 
-参数示例见 [params/misc_io_node.yaml](/home/huanghaiqiang/docker_cross_test/robotic_sdk_not_git/middleware/ros2/peripherals/misc_io/params/misc_io_node.yaml)。
+参数示例见 [params/misc_io_node.yaml](params/misc_io_node.yaml)。
 
 约束如下：
 
@@ -135,7 +135,7 @@ ros2 run peripherals_misc_io_node misc_io_node \
 sudo output/riscv64/staging/bin/test_misc_io
 ```
 
-如果要测试输出或主动读取，可根据 `test/test_misc_io.c` 里的示例切换到 `test_set_io()` 或 `test_get_io()`。
+如果要测试输出或主动读取，可根据 `components/peripherals/misc_io/example/test_misc_io.c` 里的示例切换到 `test_set_io()` 或 `test_get_io()`。
 
 ### 2. 状态话题验证
 
