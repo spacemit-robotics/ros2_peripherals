@@ -1,0 +1,30 @@
+module: middleware/ros2/peripherals/imu
+
+tests:
+  - name: imu-invalid-rate
+    description: >-
+      Verifies the IMU ROS2 node rejects an invalid publish rate with an explicit
+      error message instead of starting or hanging.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    artifacts:
+      - output/test/pr/middleware__ros2__peripherals__imu/modules/middleware__ros2__peripherals__imu/logs/imu_invalid_rate.log
+      - output/test/pr/middleware__ros2__peripherals__imu/modules/middleware__ros2__peripherals__imu/imu_invalid_rate.run.log
+    command: |
+      bash middleware/ros2/peripherals/imu/tests/test_invalid_rate.sh
+
+  - name: imu-missing-uart-device
+    description: >-
+      Verifies the IMU ROS2 node fails fast with a clear error when the configured
+      UART device path does not exist, instead of silently succeeding or hanging.
+    category: functional
+    scopes: [pr]
+    timeout_s: 120
+    workdir: sdk
+    artifacts:
+      - output/test/pr/middleware__ros2__peripherals__imu/modules/middleware__ros2__peripherals__imu/logs/imu_missing_uart_device.log
+      - output/test/pr/middleware__ros2__peripherals__imu/modules/middleware__ros2__peripherals__imu/imu_missing_uart_device.run.log
+    command: |
+      bash middleware/ros2/peripherals/imu/tests/test_missing_uart_device.sh
