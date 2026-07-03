@@ -118,8 +118,9 @@ public:
         baud_ = declare_parameter<int>("baud", 1000000);
         slave_indices_ = declare_parameter<std::vector<int64_t>>("slave_indices", std::vector<int64_t>{});
 
-        // EtherCAT specific settings
+        // EtherCAT and CANOpen specific settings
         ecat_cycle_ms_ = declare_parameter<int>("ecat_cycle_ms", 2);
+        canopen_cycle_ms_ = declare_parameter<int>("canopen_cycle_ms", 10);
         wait_for_ready_ = declare_parameter<bool>("wait_for_ready", true);
 
         // Control parameters (dynamic)
@@ -159,7 +160,7 @@ public:
             const auto id = static_cast<uint32_t>(motor_ids_[i]);
             motor_dev* dev = nullptr;
 
-            if (motor_type_ == "can") {
+            if (motor_type_ == "can" || motor_type_ == "canopen") {
                 dev = motor_alloc_can(driver_name_.c_str(), motor_iface_.c_str(), id, nullptr);
             } else if (motor_type_ == "uart") {
                 dev = motor_alloc_uart(driver_name_.c_str(),
@@ -200,13 +201,13 @@ public:
         set_all_idle();
         last_cmd_time_ = now();
 
-        // If EtherCAT, wait for ready and anchor logic zero
-        if (motor_type_ == "ecat" && wait_for_ready_) {
-            wait_for_ecat_ready();
-            // Auto-enable after successful EtherCAT initialization so that
+        // If EtherCAT or CANOpen, wait for ready and anchor logic zero
+        if ((motor_type_ == "ecat" || motor_type_ == "canopen") && wait_for_ready_) {
+            wait_for_motors_ready();
+            // Auto-enable after successful initialization so that
             // incoming commands are not silently dropped.
             enabled_ = true;
-            RCLCPP_INFO(get_logger(), "Auto-enabled after EtherCAT ready");
+            RCLCPP_INFO(get_logger(), "Auto-enabled after motors are ready");
         }
 
         // Register parameter callback
@@ -254,13 +255,19 @@ public:
     }
 
 private:
-    void wait_for_ecat_ready() {
-        RCLCPP_INFO(get_logger(), "Waiting for EtherCAT motors to enable and anchor...");
+    void wait_for_motors_ready() {
+        RCLCPP_INFO(get_logger(), "Waiting for motors to enable and anchor...");
 
         auto start_time = now();
         const auto timeout = 15.0s;
         int stable_counts = 0;
-        const int required_stable = 100 / std::max(1, ecat_cycle_ms_);
+        int cycle_ms = 10;
+        if (motor_type_ == "ecat") {
+            cycle_ms = ecat_cycle_ms_;
+        } else if (motor_type_ == "canopen") {
+            cycle_ms = canopen_cycle_ms_;
+        }
+        const int required_stable = 100 / std::max(1, cycle_ms);
 
         std::vector<motor_state> states(devs_.size());
         std::vector<motor_cmd> init_cmds(devs_.size());
@@ -269,18 +276,18 @@ private:
             init_cmds[i].pos_des = 0.0f;
         }
 
-        rclcpp::WallRate rate(1000.0 / std::max(1, ecat_cycle_ms_));
+        rclcpp::WallRate rate(1000.0 / std::max(1, cycle_ms));
 
         while (rclcpp::ok()) {
             if (now() - start_time > timeout) {
                 RCLCPP_WARN(get_logger(),
-                            "Timeout waiting for EtherCAT motors. Some "
+                            "Timeout waiting for motors. Some "
                             "motors might not be ready.");
                 break;
             }
 
             if (motor_get_states(devs_.data(), states.data(), static_cast<uint32_t>(devs_.size())) != 0) {
-                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Failed to get motor states during ECAT init");
+                RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 1000, "Failed to get motor states during init");
             }
 
             bool all_enabled = true;
@@ -298,7 +305,7 @@ private:
 
             if (all_enabled) {
                 if (++stable_counts >= required_stable) {
-                    RCLCPP_INFO(get_logger(), "All EtherCAT motors ready and anchored at physics-zero.");
+                    RCLCPP_INFO(get_logger(), "All motors ready and anchored at physics-zero.");
                     // Sync internal state to the anchored state
                     for (size_t i = 0; i < last_cmds_.size(); ++i) {
                         last_cmds_[i] = init_cmds[i];
@@ -336,6 +343,9 @@ private:
             // Ethercat 支持 CSP, CSV, CST, HM, POS(PP), VEL(PV), TRQ(PT)
             return mode == MOTOR_MODE_POS || mode == MOTOR_MODE_VEL || mode == MOTOR_MODE_TRQ ||
                     mode == MOTOR_MODE_CSP || mode == MOTOR_MODE_CSV || mode == MOTOR_MODE_CST || mode == MOTOR_MODE_HM;
+        } else if (motor_type_ == "canopen") {
+            // CANOpen 支持 POS(PP), VEL(PV), HM
+            return mode == MOTOR_MODE_POS || mode == MOTOR_MODE_VEL || mode == MOTOR_MODE_HM;
         }
         return false;
     }
@@ -374,7 +384,7 @@ private:
                     }
                 } else if (name == "motor_type" || name == "driver_name" || name == "motor_iface" ||
                             name == "motor_ids" || name == "baud" || name == "slave_indices" ||
-                            name == "ecat_cycle_ms" || name == "wait_for_ready") {
+                            name == "ecat_cycle_ms" || name == "canopen_cycle_ms" || name == "wait_for_ready") {
                     result.successful = false;
                     result.reason = "Parameter '" + name + "' cannot be modified at runtime";
                 }
@@ -444,15 +454,32 @@ private:
             return;
         }
         const auto idx = it->second;
-        float value = req->value;
-        // address 编码为寄存器号，通过 uintptr_t 传递给驱动
-        const void* addr = reinterpret_cast<const void*>(static_cast<uintptr_t>(req->reg_address));
-        int ret = motor_set_paras(devs_[idx], addr, &value, sizeof(float));
+        int ret = -1;
+
+        if (motor_type_ == "canopen" || motor_type_ == "ecat") {
+            struct sdo_addr_t {
+                uint32_t index;
+                uint32_t subindex;
+                uint32_t size;
+            } sdo_addr;
+            sdo_addr.index = (req->reg_address >> 16) & 0xFFFF;
+            sdo_addr.subindex = (req->reg_address >> 8) & 0xFF;
+            sdo_addr.size = req->reg_address & 0xFF;
+
+            uint32_t int_val = static_cast<uint32_t>(req->value);
+            ret = motor_set_paras(devs_[idx], &sdo_addr, &int_val, sizeof(uint32_t));
+        } else {
+            float value = req->value;
+            // address 编码为寄存器号，通过 uintptr_t 传递给驱动
+            const void* addr = reinterpret_cast<const void*>(static_cast<uintptr_t>(req->reg_address));
+            ret = motor_set_paras(devs_[idx], addr, &value, sizeof(float));
+        }
+
         if (ret == 0) {
             resp->success = true;
             resp->message = "OK";
             RCLCPP_INFO(get_logger(), "set_param motor_id=%u reg=0x%X value=%.4f -> OK", req->motor_id,
-                        req->reg_address, static_cast<double>(value));
+                        req->reg_address, static_cast<double>(req->value));
         } else {
             resp->success = false;
             resp->message = "motor_set_paras failed (ret=" + std::to_string(ret) + ")";
@@ -473,15 +500,39 @@ private:
             return;
         }
         const auto idx = it->second;
-        float value = 0.0f;
-        const void* addr = reinterpret_cast<const void*>(static_cast<uintptr_t>(req->reg_address));
-        int ret = motor_get_paras(devs_[idx], addr, &value, sizeof(float));
+        int ret = -1;
+        float final_value = 0.0f;
+
+        if (motor_type_ == "canopen" || motor_type_ == "ecat") {
+            struct sdo_addr_t {
+                uint32_t index;
+                uint32_t subindex;
+                uint32_t size;
+            } sdo_addr;
+            sdo_addr.index = (req->reg_address >> 16) & 0xFFFF;
+            sdo_addr.subindex = (req->reg_address >> 8) & 0xFF;
+            sdo_addr.size = req->reg_address & 0xFF;
+
+            uint32_t int_val = 0;
+            ret = motor_get_paras(devs_[idx], &sdo_addr, &int_val, sizeof(uint32_t));
+            if (ret == 0) {
+                final_value = static_cast<float>(int_val);
+            }
+        } else {
+            float value = 0.0f;
+            const void* addr = reinterpret_cast<const void*>(static_cast<uintptr_t>(req->reg_address));
+            ret = motor_get_paras(devs_[idx], addr, &value, sizeof(float));
+            if (ret == 0) {
+                final_value = value;
+            }
+        }
+
         if (ret == 0) {
             resp->success = true;
-            resp->value = value;
+            resp->value = final_value;
             resp->message = "OK";
             RCLCPP_INFO(get_logger(), "get_param motor_id=%u reg=0x%X -> %.4f", req->motor_id, req->reg_address,
-                        static_cast<double>(value));
+                        static_cast<double>(final_value));
         } else {
             resp->success = false;
             resp->value = 0.0f;
@@ -584,6 +635,7 @@ private:
     int baud_{1000000};
     std::vector<int64_t> slave_indices_;
     int ecat_cycle_ms_{2};
+    int canopen_cycle_ms_{10};
     bool wait_for_ready_{true};
 
     // Params (Control - Dynamic)

@@ -1,15 +1,10 @@
----
-sidebar_position: 3
-slug: /k3/robot-dev/sensors/5-6-3-电机
----
-
 # 基础传感器 · 电机
 
 ## 1. 模块概述
 
 - **主要功能**：`motor_node` 是 ROS 2 电机硬件抽象层节点，属于 `peripherals` 包。它将 ROS 2 话题/服务消息统一转换为多种总线协议（CAN、UART、EtherCAT）的电机控制指令，并以标准话题反馈电机状态，使上层控制算法无需关心底层硬件差异。
 - **规格与特性**：
-  - 支持接口协议：EtherCAT（CiA402）、CAN（达妙 MIT 协议）、UART（飞特 Feetech SCS/STS 协议）
+  - 支持接口协议：EtherCAT（CiA402）、CAN（达妙 MIT 协议）、CANOpen（JMC 伺服）、UART（飞特 Feetech SCS/STS 协议）
   - 控制模式：IDLE / POS / VEL / TRQ / HYBRID(MIT) / CSP / CSV / CST / HM 共 9 种
   - EtherCAT 总线周期：2–5 ms（可配置）
   - 状态反馈频率：最高 100 Hz（可配置）
@@ -20,9 +15,9 @@ slug: /k3/robot-dev/sensors/5-6-3-电机
 | --- | --- |
 | `components/peripherals/motor/include/motor.h` | C 层统一电机 API 头文件（模式枚举、cmd/state 结构体） |
 | `components/peripherals/motor/src/motor_core.c` | 电机核心调度逻辑 |
-| `components/peripherals/motor/src/drivers/` | 各协议驱动实现（`drv_ethercat_jmc`、`drv_can_dm`、`drv_uart_feetech` 等） |
+| `components/peripherals/motor/src/drivers/` | 各协议驱动实现（`drv_ethercat_jmc`、`drv_canopen_jmc`、`drv_can_dm` 等） |
 | `middleware/ros2/peripherals/motor/src/motor_node.cpp` | ROS 2 节点封装（话题、服务、参数管理） |
-| `middleware/ros2/peripherals/motor/config/` | YAML 参数配置文件（`ecat_motor_params.yaml`、`can_motor_params.yaml`、`uart_motor_params.yaml`） |
+| `middleware/ros2/peripherals/motor/config/` | YAML 参数配置文件（`ecat_motor_params.yaml`、`can_motor_params.yaml`、`canopen_motor_params.yaml`、`uart_motor_params.yaml`） |
 
 ## 2. 环境准备
 
@@ -42,6 +37,7 @@ slug: /k3/robot-dev/sensors/5-6-3-电机
 - **硬件与连接**：
   - EtherCAT：K3 COM260 开发板 + JMC IHSS42-EC 步进伺服，RJ45 网线连接 `eth0`
   - CAN：K3 COM260 + 达妙电机，CAN 收发器连接 `can0`
+  - CANOpen：K3 COM260 + JMC 伺服电机，CAN 收发器连接 `can0`
   - UART：K3 COM260 + 飞特 Feetech SCS/STS 舵机，USB-TTL 连接 `/dev/ttyACM0`
   - 确保电机供电正常、散热良好
 - **工具与权限**：
@@ -217,6 +213,34 @@ ros2 topic pub /cmd/motor peripherals/msg/MotorCommandArray \
 ```
 预期现象：舵机转动到约 90° 位置。
 
+### 3.4 CANOpen 电机控制（JMC 伺服，PP/PV/HM 模式）
+
+**前置**：见 §2，确保 CAN 总线已启用，波特率与电机拨码一致（如 1000000）：
+```bash
+sudo ip link set can0 up type can bitrate 1000000
+```
+
+**步骤 1**：加载环境
+```bash
+sros2_setup  # 已在 SDK 根目录 source build/envsetup.sh
+```
+
+**步骤 2**：启动 motor_node
+```bash
+# 命令中的 config/canopen_motor_params.yaml 为相对路径，
+# 需在包根目录 middleware/ros2/peripherals/motor 下执行；
+# 若在其他路径运行，请改用配置文件的绝对路径，否则会报找不到文件。
+ros2 run peripherals motor_node --ros-args --params-file config/canopen_motor_params.yaml
+```
+预期现象：终端输出 `Waiting for motors to enable and anchor...`，系统在后台自动完成 NMT 和 PDO 流转；当所有电机状态切换到 Operational 后，输出 `All motors ready and anchored at physics-zero.` 和 `Auto-enabled after motors are ready`。
+
+**步骤 3**：发送位置指令（POS 模式即 PP 模式，移动到 3.14 rad）
+```bash
+ros2 topic pub /cmd/motor peripherals/msg/MotorCommandArray \
+  "{commands: [{id: 1, mode: 1, pos_des: 3.14}]}" --rate 10
+```
+预期现象：电机按驱动器设定的 Profile 参数（加速度/速度）平滑转动到 180°。
+
 ## 4. 应用开发
 
 - **对外 API 与接口形态**：
@@ -241,7 +265,7 @@ ros2 topic pub /cmd/motor peripherals/msg/MotorCommandArray \
   | 5 | `CSP` | 周期同步位置 | EtherCAT |
   | 6 | `CSV` | 周期同步速度 | EtherCAT |
   | 7 | `CST` | 周期同步力矩 | EtherCAT |
-  | 8 | `HM` | 回零模式 | EtherCAT |
+  | 8 | `HM` | 回零模式 | EtherCAT, CANOpen |
 
 - **调用注意点**：
   - EtherCAT 驱动线程为 SCHED_FIFO（优先级 80），需 `root` 或 `CAP_SYS_NICE` 权限
@@ -295,13 +319,4 @@ ros2 topic pub /cmd/motor peripherals/msg/MotorCommandArray \
 | CAN 电机发指令无反应 | 未调用使能服务 | 先执行 `ros2 service call /motor/enable std_srvs/srv/SetBool "{data: true}"` |
 | UART 电机无响应 | 串口权限不足或波特率不匹配 | 确认用户在 `dialout` 组，检查 `baud` 参数与电机实际波特率一致 |
 
-## 附录：性能与测试数据（可选）
 
-| 指标 | 数值 | 测试条件 |
-| --- | --- | --- |
-| EtherCAT 控制周期 | 2 ms | K3 COM260，单从站 |
-| 状态反馈延迟 | < 5 ms | EtherCAT CSP 模式，100 Hz 发布 |
-| CAN 指令响应时间 | < 10 ms | 达妙电机，1 Mbps CAN 总线 |
-| UART 位置精度 | ±0.02 rad | 飞特 STS 舵机，1 Mbps 波特率 |
-
-**测试方法**：K3 COM260 开发板，ROS 2 Humble，motor_node 单节点运行，使用 `ros2 topic delay` 和 `ros2 topic hz` 统计延迟与频率。
