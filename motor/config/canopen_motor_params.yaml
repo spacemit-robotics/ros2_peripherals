@@ -1,0 +1,37 @@
+/**:
+  ros__parameters:
+    # ---------------------------------------------
+    # 硬件与驱动配置 (Hardware & Driver Settings)
+    # ---------------------------------------------
+    motor_type: "canopen"               # 电机协议类型
+    driver_name: "drv_canopen_jmc"      # 底层驱动名称
+    motor_iface: "can0"                 # CAN 通信接口
+    motor_ids: [1]                      # 节点所管理的电机 ID 列表
+    wait_for_ready: true                # 是否在启动时等待 NMT 状态机流转到 Operational
+
+    # ---------------------------------------------
+    # 频率与超时设置 (Frequency & Timeout)
+    # ---------------------------------------------
+    state_publish_hz: 100.0             # 状态发布频率 (100Hz = 10ms 周期，与底层驱动周期一致)
+    cmd_timeout_ms: 200                 # 指令超时安全停车时间 (ms)
+
+    # ---------------------------------------------
+    # 安全控制限幅 (Safety Limits)
+    # ---------------------------------------------
+    max_velocity: 10.0                  # 最大速度限幅 (rad/s)
+    max_torque: 5.0                     # 最大力矩限幅 (Nm)
+
+    # ---------------------------------------------
+    # SDO 配置映射 (仅作参考，实际不生效)
+    # ---------------------------------------------
+    # 警告：以下三个参数对 CANOpen 电机【不起任何作用】。
+    #   - motor_node 在 canopen 模式下不会读取 profile_vel/acc/dec；
+    #   - drv_canopen_jmc_adapter 在初始化时固定下发
+    #     profile_vel = 10000 (0x6081)、profile_acc = 2000 (0x6083)、
+    #     profile_dec = 2000 (0x6084)。
+    # 若需修改 Profile 参数，请直接修改驱动源码
+    # components/peripherals/motor/src/drivers/drv_canopen_jmc/src/drv_canopen_jmc_adapter.c，
+    # 修改此文件中的值不会影响驱动行为。此处保留仅为展示当前生效的默认值。
+    profile_vel: [10000.0]
+    profile_acc: [2000.0]
+    profile_dec: [2000.0]
